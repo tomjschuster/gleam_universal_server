@@ -9,35 +9,64 @@ pub fn main() {
 
 // gleeunit test functions end in `_test`
 pub fn universal_server_test() {
-  let reply_to = process.new_subject()
-
-  let universal_subject =
-    universal_server.start(True)
-    |> should.be_ok()
+  let universal_subject = should.be_ok(universal_server.start(True))
 
   let concrete_subject =
-    universal_server.become(universal_subject, factorial_server)
+    universal_subject
+    |> universal_server.become(factorial_server)
+    |> should.be_ok()
 
   should.equal(
     process.subject_owner(universal_subject),
     process.subject_owner(concrete_subject),
   )
 
-  process.send(concrete_subject, Factorial(reply_to, 50))
+  concrete_subject
+  |> compute(50)
+  |> should.be_ok()
+  |> should.equal(
+    30_414_093_201_713_378_043_612_608_166_064_768_844_377_641_568_960_512_000_000_000_000,
+  )
+
+  let reply_to = process.new_subject()
+
+  process.start(
+    fn() { process.send(reply_to, compute(concrete_subject, 3)) },
+    True,
+  )
+
+  reply_to
+  |> process.receive(5000)
+  |> should.be_ok()
+  |> should.be_ok()
+  |> should.equal(6)
 }
 
 type Factorial {
   Factorial(reply_to: Subject(Int), n: Int)
 }
 
-fn factorial_server() -> Subject(Factorial) {
-  process.new_subject()
+fn compute(subject: Subject(Factorial), n: Int) -> Result(Int, Nil) {
+  let reply_to = process.new_subject()
+  process.send(subject, Factorial(reply_to, n))
+  process.receive(reply_to, 5000)
+}
+
+fn factorial_server(subject: Subject(Factorial)) {
+  let Factorial(reply_to, n) =
+    process.new_selector()
+    |> process.selecting(subject, fn(m) { m })
+    |> process.select_forever()
+
+  process.send(reply_to, factorial(n))
+
+  factorial_server(subject)
 }
 
 fn factorial(n: Int) -> Int {
   case n {
     0 -> 1
-    n if n > 0 -> factorial(n - 1)
+    n if n > 0 -> n * factorial(n - 1)
     _ -> panic as "cannot calculate negative factorial"
   }
 }
