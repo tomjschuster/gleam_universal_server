@@ -35,15 +35,11 @@ fn become_() {
 fn same_process_() {
   let universal_subject = should.be_ok(universal_server.start(True))
 
-  let specific_subject =
-    universal_subject
-    |> universal_server.become(factorial_server)
-    |> should.be_ok()
-
-  should.equal(
-    process.subject_owner(universal_subject),
-    process.subject_owner(specific_subject),
-  )
+  universal_subject
+  |> universal_server.become(factorial_server)
+  |> should.be_ok()
+  |> process.subject_owner()
+  |> should.equal(process.subject_owner(universal_subject))
 }
 
 fn sub_process_() {
