@@ -8,7 +8,7 @@ pub fn main() {
 }
 
 pub fn universal_server_test_() {
-  [become_, same_process_, sub_process_, become_only_once_]
+  [become_, same_process_, sub_process_, become_only_once_, become_twice_]
 }
 
 fn become_() {
@@ -74,6 +74,23 @@ fn become_only_once_() {
   Nil
 }
 
+fn become_twice_() {
+  let universal_subject =
+    universal_server.start(True)
+    |> should.be_ok()
+
+  universal_subject
+  |> universal_server.become(resetable_factorial_server(_, universal_subject))
+  |> should.be_ok()
+
+  universal_subject
+  |> universal_server.become(summation_server)
+  |> should.be_ok()
+  |> compute_summation(50)
+  |> should.be_ok()
+  |> should.equal(1275)
+}
+
 fn factorial_server(subject: Subject(#(Subject(Int), Int))) {
   let #(reply_to, n) =
     process.new_selector()
@@ -83,6 +100,30 @@ fn factorial_server(subject: Subject(#(Subject(Int), Int))) {
   process.send(reply_to, factorial(n))
 
   factorial_server(subject)
+}
+
+type ResetableFactorialMessage(a) {
+  Factorial(reply_to: Subject(Int), n: Int)
+  UniversalServer(fn() -> a)
+}
+
+fn resetable_factorial_server(
+  subject: Subject(#(Subject(Int), Int)),
+  universal_subject: Subject(fn() -> a),
+) {
+  let message =
+    process.new_selector()
+    |> process.selecting(subject, fn(tuple) { Factorial(tuple.0, tuple.1) })
+    |> process.selecting(universal_subject, fn(fun) { UniversalServer(fun) })
+    |> process.select_forever()
+
+  case message {
+    UniversalServer(fun) -> fun()
+    Factorial(reply_to, n) -> {
+      process.send(reply_to, factorial(n))
+      resetable_factorial_server(subject, universal_subject)
+    }
+  }
 }
 
 fn compute_factorial(
