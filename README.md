@@ -13,8 +13,13 @@ pub fn main() {
   use u_subject <- try(universal_server.start(True))
   use f_subject <- try(universal_server.become(u_subject, factorial_server))
 
+  let u_pid =  process.subject_owner(u_subject)
+  let f_pid =  process.subject_owner(f_subject)
+  let assert True = u_pid == f_pid
+
   let assert Ok(120) = compute_factorial(f_subject, 5)
   let assert Ok(3_628_800) = compute_factorial(f_subject, 10)
+
   Ok(Nil)
 }
 
