@@ -1,5 +1,7 @@
 # universal_server
 
+![test workflow](https://github.com/tomjschuster/gleam_universal_server/actions/workflows/test.yml/badge.svg)
+
 A [Gleam](https://gleam.run/) implementation of the "Universal Server" demonstrated by Joe Armstrong in his blog post [My favorite Erlang Program](https://joearms.github.io/published/2013-11-21-My-favorite-erlang-program.html).
 
 ```gleam
