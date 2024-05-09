@@ -1,4 +1,5 @@
 import gleam/erlang/process.{type Subject}
+import gleam/result
 import gleeunit
 import gleeunit/should
 import universal_server
@@ -26,14 +27,14 @@ fn become_() {
 fn same_process_() {
   let universal_subject = should.be_ok(universal_server.start(True))
 
-  let concrete_subject =
+  let specific_subject =
     universal_subject
     |> universal_server.become(factorial_server)
     |> should.be_ok()
 
   should.equal(
     process.subject_owner(universal_subject),
-    process.subject_owner(concrete_subject),
+    process.subject_owner(specific_subject),
   )
 }
 
@@ -53,7 +54,7 @@ fn sub_process_() {
 
   reply_to
   |> process.receive(1000)
-  |> should.be_ok()
+  |> result.flatten()
   |> should.be_ok()
   |> should.equal(1275)
 }
