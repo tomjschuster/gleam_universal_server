@@ -83,6 +83,9 @@ fn become_twice_() {
   universal_subject
   |> universal_server.become(resetable_factorial_server(_, universal_subject))
   |> should.be_ok()
+  |> compute_factorial(10)
+  |> should.be_ok()
+  |> should.equal(3_628_800)
 
   universal_subject
   |> universal_server.become(summation_server)
