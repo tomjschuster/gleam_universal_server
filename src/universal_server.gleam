@@ -5,12 +5,12 @@ pub fn start(linked: Bool) -> Result(Subject(fn() -> a), Nil) {
 
   process.start(
     fn() {
-      let subject = process.new_subject()
-      process.send(reply_to, subject)
+      let universal_subject = process.new_subject()
+      process.send(reply_to, universal_subject)
 
       {
         process.new_selector()
-        |> process.selecting(subject, fn(m) { m })
+        |> process.selecting(universal_subject, fn(m) { m })
         |> process.select_forever()
       }()
     },
@@ -21,15 +21,15 @@ pub fn start(linked: Bool) -> Result(Subject(fn() -> a), Nil) {
 }
 
 pub fn become(
-  subject: Subject(fn() -> a),
+  universal_subject: Subject(fn() -> a),
   fun: fn(Subject(b)) -> a,
 ) -> Result(Subject(b), Nil) {
   let reply_to = process.new_subject()
 
-  process.send(subject, fn() {
-    let concrete_subject = process.new_subject()
-    process.send(reply_to, concrete_subject)
-    fun(concrete_subject)
+  process.send(universal_subject, fn() {
+    let specific_subject = process.new_subject()
+    process.send(reply_to, specific_subject)
+    fun(specific_subject)
   })
 
   process.receive(reply_to, 1000)
