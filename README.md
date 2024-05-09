@@ -1,25 +1,53 @@
 # universal_server
 
-[![Package Version](https://img.shields.io/hexpm/v/universal_server)](https://hex.pm/packages/universal_server)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/universal_server/)
+A [Gleam](https://gleam.run/) implementation of the "Universal Server" demonstrated by Joe Armstrong in his blog post [My favorite Erlang Program](https://joearms.github.io/published/2013-11-21-My-favorite-erlang-program.html).
 
-```sh
-gleam add universal_server
-```
 ```gleam
+import gleam/erlang/process.{type Subject}
+import gleam/result.{try}
 import universal_server
 
 pub fn main() {
-  // TODO: An example of the project in use
+  use u_subject <- try(universal_server.start(True))
+  use f_subject <- try(universal_server.become(u_subject, factorial_server))
+
+  let assert Ok(120) = compute_factorial(f_subject, 5)
+  let assert Ok(3_628_800) = compute_factorial(f_subject, 10)
+  Ok(Nil)
+}
+
+fn factorial_server(subject: Subject(#(Subject(Int), Int))) {
+  let #(reply_to, n) =
+    process.new_selector()
+    |> process.selecting(subject, fn(m) { m })
+    |> process.select_forever()
+
+  process.send(reply_to, factorial(n))
+
+  factorial_server(subject)
+}
+
+fn compute_factorial(
+  subject: Subject(#(Subject(Int), Int)),
+  n: Int,
+) -> Result(Int, Nil) {
+  let reply_to = process.new_subject()
+  process.send(subject, #(reply_to, n))
+  process.receive(reply_to, 5000)
+}
+
+fn factorial(n: Int) -> Int {
+  case n {
+    0 -> 1
+    n if n > 0 -> n * factorial(n - 1)
+    _ -> panic as "cannot calculate negative factorial"
+  }
 }
 ```
-
-Further documentation can be found at <https://hexdocs.pm/universal_server>.
 
 ## Development
 
 ```sh
-gleam run   # Run the project
 gleam test  # Run the tests
 gleam shell # Run an Erlang shell
 ```
