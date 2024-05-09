@@ -7,7 +7,12 @@ pub fn start(linked: Bool) -> Result(Subject(fn() -> a), Nil) {
     fn() {
       let subject = process.new_subject()
       process.send(reply_to, subject)
-      universal_server(subject)
+
+      {
+        process.new_selector()
+        |> process.selecting(subject, fn(m) { m })
+        |> process.select_forever()
+      }()
     },
     linked,
   )
@@ -28,12 +33,4 @@ pub fn become(
   })
 
   process.receive(reply_to, 1000)
-}
-
-fn universal_server(subject: Subject(fn() -> a)) -> a {
-  {
-    process.new_selector()
-    |> process.selecting(subject, fn(m) { m })
-    |> process.select_forever()
-  }()
 }
