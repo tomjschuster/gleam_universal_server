@@ -13,10 +13,18 @@ pub fn universal_server_test_() {
 }
 
 fn become_() {
-  universal_server.start(True)
+  let subject =
+    universal_server.start(True)
+    |> should.be_ok()
+    |> universal_server.become(factorial_server)
+    |> should.be_ok()
+
+  subject
+  |> compute_factorial(5)
   |> should.be_ok()
-  |> universal_server.become(factorial_server)
-  |> should.be_ok()
+  |> should.equal(120)
+
+  subject
   |> compute_factorial(50)
   |> should.be_ok()
   |> should.equal(
