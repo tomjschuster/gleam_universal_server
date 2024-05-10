@@ -20,12 +20,12 @@ fn become_() {
     |> should.be_ok()
 
   subject
-  |> compute_factorial(5)
+  |> compute(5)
   |> should.be_ok()
   |> should.equal(120)
 
   subject
-  |> compute_factorial(50)
+  |> compute(50)
   |> should.be_ok()
   |> should.equal(
     30_414_093_201_713_378_043_612_608_166_064_768_844_377_641_568_960_512_000_000_000_000,
@@ -51,10 +51,7 @@ fn sub_process_() {
 
   let reply_to = process.new_subject()
 
-  process.start(
-    fn() { process.send(reply_to, compute_summation(subject, 50)) },
-    True,
-  )
+  process.start(fn() { process.send(reply_to, compute(subject, 50)) }, True)
 
   reply_to
   |> process.receive(1000)
@@ -87,14 +84,14 @@ fn become_twice_() {
   universal_subject
   |> universal_server.become(resetable_factorial_server(_, universal_subject))
   |> should.be_ok()
-  |> compute_factorial(10)
+  |> compute(10)
   |> should.be_ok()
   |> should.equal(3_628_800)
 
   universal_subject
   |> universal_server.become(summation_server)
   |> should.be_ok()
-  |> compute_summation(50)
+  |> compute(50)
   |> should.be_ok()
   |> should.equal(1275)
 }
@@ -134,23 +131,6 @@ fn resetable_factorial_server(
   }
 }
 
-fn compute_factorial(
-  subject: Subject(#(Subject(Int), Int)),
-  n: Int,
-) -> Result(Int, Nil) {
-  let reply_to = process.new_subject()
-  process.send(subject, #(reply_to, n))
-  process.receive(reply_to, 1000)
-}
-
-fn factorial(n: Int) -> Int {
-  case n {
-    0 -> 1
-    n if n > 0 -> n * factorial(n - 1)
-    _ -> panic as "cannot calculate negative factorial"
-  }
-}
-
 fn summation_server(subject: Subject(#(Subject(Int), Int))) {
   let #(reply_to, n) =
     process.new_selector()
@@ -162,13 +142,12 @@ fn summation_server(subject: Subject(#(Subject(Int), Int))) {
   summation_server(subject)
 }
 
-fn compute_summation(
-  subject: Subject(#(Subject(Int), Int)),
-  n: Int,
-) -> Result(Int, Nil) {
-  let reply_to = process.new_subject()
-  process.send(subject, #(reply_to, n))
-  process.receive(reply_to, 1000)
+fn factorial(n: Int) -> Int {
+  case n {
+    0 -> 1
+    n if n > 0 -> n * factorial(n - 1)
+    _ -> panic as "cannot calculate negative factorial"
+  }
 }
 
 fn summation(n: Int) -> Int {
@@ -177,4 +156,10 @@ fn summation(n: Int) -> Int {
     n if n > 0 -> n + summation(n - 1)
     _ -> panic as "cannot calculate negative summation"
   }
+}
+
+fn compute(subject: Subject(#(Subject(Int), Int)), n: Int) -> Result(Int, Nil) {
+  let reply_to = process.new_subject()
+  process.send(subject, #(reply_to, n))
+  process.receive(reply_to, 1000)
 }

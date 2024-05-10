@@ -13,12 +13,12 @@ pub fn main() {
   use u_subject <- try(universal_server.start(True))
   use f_subject <- try(universal_server.become(u_subject, factorial_server))
 
-  let u_pid =  process.subject_owner(u_subject)
-  let f_pid =  process.subject_owner(f_subject)
+  let u_pid = process.subject_owner(u_subject)
+  let f_pid = process.subject_owner(f_subject)
   let assert True = u_pid == f_pid
 
-  let assert Ok(120) = compute_factorial(f_subject, 5)
-  let assert Ok(3_628_800) = compute_factorial(f_subject, 10)
+  let assert Ok(120) = compute(f_subject, 5)
+  let assert Ok(3_628_800) = compute(f_subject, 10)
 
   Ok(Nil)
 }
@@ -34,21 +34,18 @@ fn factorial_server(subject: Subject(#(Subject(Int), Int))) {
   factorial_server(subject)
 }
 
-fn compute_factorial(
-  subject: Subject(#(Subject(Int), Int)),
-  n: Int,
-) -> Result(Int, Nil) {
-  let reply_to = process.new_subject()
-  process.send(subject, #(reply_to, n))
-  process.receive(reply_to, 5000)
-}
-
 fn factorial(n: Int) -> Int {
   case n {
     0 -> 1
     n if n > 0 -> n * factorial(n - 1)
     _ -> panic as "cannot calculate negative factorial"
   }
+}
+
+fn compute(subject: Subject(#(Subject(Int), Int)), n: Int) -> Result(Int, Nil) {
+  let reply_to = process.new_subject()
+  process.send(subject, #(reply_to, n))
+  process.receive(reply_to, 5000)
 }
 ```
 
